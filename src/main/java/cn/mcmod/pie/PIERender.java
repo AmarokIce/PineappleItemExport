@@ -72,14 +72,14 @@ public class PIERender {
                 list.add(dataList.get(item));
             }
 
-            Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+            Gson gson = new GsonBuilder().disableHtmlEscaping().create();
             File file = new File(System.getProperty("user.dir") + File.separator + "export", modid + "_item.json");
             if (!file.getParentFile().isDirectory()) file.getParentFile().mkdirs();
             if (!file.isFile() || !file.exists()) file.createNewFile();
 
-            FileOutputStream stream = new FileOutputStream(file);
-            stream.write(gson.toJson(list).getBytes(StandardCharsets.UTF_8));
-            stream.close();
+            PrintWriter writer =  new PrintWriter(file, "UTF-8");
+            for (Data data : list) writer.println(gson.toJson(data));
+            writer.close();
 
         } catch (Exception e) {
             e.printStackTrace();
