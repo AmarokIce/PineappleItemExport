@@ -15,11 +15,11 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatComponentTranslation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +29,7 @@ public class PIE {
 
     public static Map<String, Map<ItemStack, String>> ModMap = null;
     public static EntityPlayer player = null;
+    public static boolean canRenderer = false;
 
     @Mod.EventHandler
     public void init(FMLPreInitializationEvent event) {
@@ -43,19 +44,18 @@ public class PIE {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void renderTickEvent(TickEvent.RenderTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
-        if (PIE.player != null && PIE.ModMap != null) {
+        if (PIE.player != null && PIE.ModMap != null && canRenderer) {
             for (String modid : PIE.ModMap.keySet()) {
                 new PIERender(PIE.player, modid, PIE.ModMap.get(modid));
             }
 
             PIE.player = null;
             PIE.ModMap = null;
+            PIE.canRenderer = false;
         }
     }
 
     static class CommandRender extends CommandBase {
-        Map<String, Map<ItemStack, String>> map = Maps.newHashMap();
-
         @Override
         public String getCommandName() {
             return "item_export";
@@ -69,10 +69,13 @@ public class PIE {
         @Override
         public void processCommand(ICommandSender sender, String[] command_tree) {
             if (command_tree[0] == null) sender.addChatMessage(new ChatComponentTranslation("noModid.message"));
+            sender.addChatMessage(new ChatComponentText("Now export " + command_tree[0]));
 
-            if (command_tree[0].equals("All")) {
+            Map<String, Map<ItemStack, String>> map = Maps.newHashMap();
+            if (command_tree[0].toString() == "All") {
                 for (Item item : (Iterable<Item>) Item.itemRegistry) {
                     GameRegistry.UniqueIdentifier uid = GameRegistry.findUniqueIdentifierFor(item);
+
                     if (!map.containsKey(uid.modId)) {
                         map.put(uid.modId, Maps.newHashMap());
                     }
@@ -92,7 +95,7 @@ public class PIE {
             } else {
                 for (Item item : (Iterable<Item>) Item.itemRegistry) {
                     GameRegistry.UniqueIdentifier uid = GameRegistry.findUniqueIdentifierFor(item);
-                    if (!uid.modId.equals(command_tree[0])) continue;
+                    if (!uid.modId.toString().equals(command_tree[0].toString())) continue;
 
                     if (!map.containsKey(uid.modId)) {
                         map.put(uid.modId, Maps.newHashMap());
@@ -102,12 +105,13 @@ public class PIE {
                     for (int i = 0; i <= 16; i ++) {
                         ItemStack is = new ItemStack(item, 1, i);
                         try {
+                            String name = uid.toString().replace("item.", "").replace("tile.", "");
                             if (i == 0) {
                                 listTexture.add(is.getIconIndex().getIconName());
-                                map.get(uid.modId).put(is, uid.toString());
+                                map.get(uid.modId).put(is, name);
                             } else if (!listTexture.contains(is.getIconIndex().getIconName())) {
                                 listTexture.add(is.getIconIndex().getIconName());
-                                map.get(uid.modId).put(is, uid.toString());
+                                map.get(uid.modId).put(is, name);
                             }
                         } catch (ArrayIndexOutOfBoundsException e) {
                             e.printStackTrace();
@@ -117,8 +121,10 @@ public class PIE {
                 }
             }
 
-            player = getCommandSenderAsPlayer(sender);
-            ModMap = map;
+            PIE.player = getCommandSenderAsPlayer(sender);
+            PIE.ModMap = map;
+
+            PIE.canRenderer = true;
         }
     }
 }

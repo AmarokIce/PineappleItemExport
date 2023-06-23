@@ -9,8 +9,9 @@ public class Data {
     String metadata;
     String smallIcon;
     String largeIcon;
+    String type;
 
-    public Data(String registerName, String name, String englishName, int maxDurability, int maxStackSize, int metadata, String smallIcon, String largeIcon) {
+    public Data(String registerName, String name, String englishName, int maxDurability, int maxStackSize, int metadata, String smallIcon, String largeIcon, String type) {
         this.registerName = registerName;
         this.name = name;
         this.maxDurability = Integer.toString(maxDurability);
@@ -19,5 +20,6 @@ public class Data {
         this.englishName = englishName;
         this.smallIcon = smallIcon;
         this.largeIcon = largeIcon;
+        this.type = type;
     }
 }

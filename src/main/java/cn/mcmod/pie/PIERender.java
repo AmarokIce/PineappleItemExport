@@ -4,12 +4,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.resources.Language;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ChatComponentText;
 import org.lwjgl.BufferUtils;
@@ -39,10 +41,11 @@ public class PIERender {
                     "null",
                     "null",
                     item.getMaxDamage(),
-                    item.getMaxStackSize(),
+                     item.getMaxStackSize(),
                     item.getItemDamage(),
                     render(item, 32),
-                    render(item, 128)
+                    render(item, 128),
+                    Block.getBlockFromItem(item.getItem()) == Blocks.air ? "Item" : "Block"
             ));
         }
 
@@ -147,7 +150,7 @@ public class PIERender {
         else tz = 512;
 
         try {
-            BufferedImage img = resizeImage(tz,size);
+            BufferedImage img = resizeImage(size, tz);
 
             // All well done, now return the base64 item icon.
             return Base64.getEncoder().encodeToString(getByteByImg(img));
