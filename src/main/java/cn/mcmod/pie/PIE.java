@@ -138,7 +138,7 @@ public class PIE {
                     }
 
                     List<String> listTexture = Lists.newArrayList();
-                    int meta = item.getHasSubtypes() ? 64 : 16;
+                    int meta = item.getHasSubtypes() ? 32 : 16;
                     for (int i = 0; i <= meta; i ++) {
                         ItemStack is = new ItemStack(item, 1, i);
                         try {
