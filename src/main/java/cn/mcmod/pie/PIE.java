@@ -63,16 +63,16 @@ public class PIE {
 
         @Override
         public String getCommandUsage(ICommandSender p_71518_1_) {
-            return "/item_export [name | All]";
+            return "/item_export [name | All | Hand] [int (if Hand)]";
         }
 
-        @Override
+        @Override @SuppressWarnings("unchecked")
         public void processCommand(ICommandSender sender, String[] command_tree) {
             if (command_tree[0] == null) sender.addChatMessage(new ChatComponentTranslation("noModid.message"));
             sender.addChatMessage(new ChatComponentText("Now export " + command_tree[0]));
 
             Map<String, Map<ItemStack, String>> map = Maps.newHashMap();
-            if (command_tree[0].toString() == "All") {
+            if (command_tree[0].equalsIgnoreCase("All")) {
                 for (Item item : (Iterable<Item>) Item.itemRegistry) {
                     GameRegistry.UniqueIdentifier uid = GameRegistry.findUniqueIdentifierFor(item);
 
@@ -92,17 +92,54 @@ public class PIE {
                         }
                     }
                 }
+            } else if (command_tree[0].equalsIgnoreCase("Hand")) {
+                ItemStack item = getCommandSenderAsPlayer(sender).getHeldItem();
+                if (item == null) {
+                    sender.addChatMessage(new ChatComponentText("If you want to export a item in your hand, hold a item first."));
+                    return;
+                }
+
+                int maxNumber;
+                if (command_tree[1] == null) maxNumber = 0;
+                else {
+                    try {
+                        maxNumber = Integer.parseInt(command_tree[1]);
+                    } catch (NumberFormatException e) {
+                        maxNumber = 0;
+                    }
+                }
+
+                List<String> listTexture = Lists.newArrayList();
+                GameRegistry.UniqueIdentifier uid = GameRegistry.findUniqueIdentifierFor(item.getItem());
+                for (int i = 0; i <= maxNumber + 1; i ++) {
+                    ItemStack is = new ItemStack(item.getItem(), 1, i);
+                    try {
+                        String name = uid.toString().replace("item.", "").replace("tile.", "");
+                        if (i == 0) {
+                            listTexture.add(is.getIconIndex().getIconName());
+                            map.get(uid.modId).put(is, name);
+                        } else if (!listTexture.contains(is.getIconIndex().getIconName())) {
+                            listTexture.add(is.getIconIndex().getIconName());
+                            map.get(uid.modId).put(is, name);
+                        }
+                    } catch (ArrayIndexOutOfBoundsException e) {
+                        log.error(e);
+                        log.error(uid + " cannot get icon with meta!");
+                    }
+                }
+
             } else {
                 for (Item item : (Iterable<Item>) Item.itemRegistry) {
                     GameRegistry.UniqueIdentifier uid = GameRegistry.findUniqueIdentifierFor(item);
-                    if (!uid.modId.toString().equals(command_tree[0].toString())) continue;
+                    if (!uid.modId.equalsIgnoreCase(command_tree[0])) continue;
 
                     if (!map.containsKey(uid.modId)) {
                         map.put(uid.modId, Maps.newHashMap());
                     }
 
                     List<String> listTexture = Lists.newArrayList();
-                    for (int i = 0; i <= 16; i ++) {
+                    int meta = item.getHasSubtypes() ? 64 : 16;
+                    for (int i = 0; i <= meta; i ++) {
                         ItemStack is = new ItemStack(item, 1, i);
                         try {
                             String name = uid.toString().replace("item.", "").replace("tile.", "");
@@ -114,7 +151,7 @@ public class PIE {
                                 map.get(uid.modId).put(is, name);
                             }
                         } catch (ArrayIndexOutOfBoundsException e) {
-                            e.printStackTrace();
+                            log.error(e);
                             log.error(uid + " cannot get icon with meta!");
                         }
                     }

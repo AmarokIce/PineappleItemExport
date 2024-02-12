@@ -20,7 +20,6 @@ import org.lwjgl.opengl.GL11;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -29,6 +28,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+import static cn.mcmod.pie.PIE.log;
+
+@SuppressWarnings("unused")
 public class PIERender {
     Map<ItemStack, Data> dataList = Maps.newHashMap();
     List<Data> list = Lists.newArrayList();
@@ -85,10 +87,11 @@ public class PIERender {
             writer.close();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e);
         }
     }
 
+    @Deprecated
     private Map<String, String> getMapFromLang(InputStream langFile) {
         Map<String, String> map = Maps.newHashMap();
 
@@ -144,13 +147,13 @@ public class PIERender {
         }
         GL11.glPopMatrix();
 
-        int tz;
-        if (scale < 4.0) tz = 32;
-        else if (scale == 5.0) tz = 128;
-        else tz = 512;
+        int target;
+        if (scale < 4.0) target = 32;
+        else if (scale == 5.0) target = 128;
+        else target = 512;
 
         try {
-            BufferedImage img = resizeImage(size, tz);
+            BufferedImage img = resizeImage(size, target);
 
             // All well done, now return the base64 item icon.
             return Base64.getEncoder().encodeToString(getByteByImg(img));
@@ -160,35 +163,38 @@ public class PIERender {
 
     }
 
-    private BufferedImage resizeImage(int size, int target) {
+    private BufferedImage resizeImage(int target, int img_size) {
         GL11.glReadBuffer(1029);
-        ByteBuffer buf = BufferUtils.createByteBuffer(size * size * 4);
-        GL11.glReadPixels(0, 0, size, size, 32993, 5121, buf);
-        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        int[] pixels = new int[size * size];
+        ByteBuffer buf = BufferUtils.createByteBuffer(img_size * img_size * 4);
+        GL11.glReadPixels(0, 0, img_size, img_size, 32993, 5121, buf);
+        BufferedImage img = new BufferedImage(img_size, img_size, BufferedImage.TYPE_INT_ARGB);
+        int[] pixels = new int[img_size * img_size];
         buf.asIntBuffer().get(pixels);
-        img.setRGB(0, 0, size, size, pixels, 0, size);
+        img.setRGB(0, 0, img_size, img_size, pixels, 0, img_size);
 
         // Create flipped because when we get the img, it's reverse ...
         AffineTransform at = new AffineTransform();
         at.concatenate(AffineTransform.getScaleInstance(1.0D, -1.0D));
         at.concatenate(AffineTransform.getTranslateInstance(0.0D, -img.getHeight()));
 
-        BufferedImage newImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage newImage = new BufferedImage(img_size, img_size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = newImage.createGraphics();
+        // g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, 1.0f));
         g.transform(at);
         g.drawImage(img, 0, 0, null);
         g.dispose();
 
-        double tgs;
-        if (size == 32) {
-            tgs = target == 32 ? 1 : 4;
-        } else if (size == 128) {
-            tgs = target == 32 ? 0.25D : 1;
-        } else tgs = target == 32 ? 0.0625D : 0.25D;
+        // double tgs = target / img_size;
+        // AffineTransformOp op = new AffineTransformOp(AffineTransform.getScaleInstance(tgs, tgs), null);
+        // return op.filter(newImage, null);
 
-        AffineTransformOp op = new AffineTransformOp(AffineTransform.getScaleInstance(tgs, tgs), null);
-        return op.filter(newImage, null);
+        return remakeSize(target, newImage);
+    }
+
+    private BufferedImage remakeSize(int size, BufferedImage img) {
+        BufferedImage newImg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        newImg.getGraphics().drawImage(img.getScaledInstance(size, size, Image.SCALE_SMOOTH), 0, 0, null);
+        return newImg;
     }
 
     // Make byte array, and make base64 ...

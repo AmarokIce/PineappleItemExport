@@ -3,7 +3,7 @@
     "modid": "pineapple_item_export",
     "name": "Pineapple Item Export",
     "description": "Pineapple Item Export",
-    "version": "1.0",
+    "version": "1.1",
     "mcversion": "${mcversion}",
     "url": "",
     "updateUrl": "",
